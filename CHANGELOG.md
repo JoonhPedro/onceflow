@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - Initial Release
 
 ### Added
-- Core `Onceflow` engine for atomic idempotency locking.
+- Core `OnceFlow` engine for atomic idempotency locking.
 - **Node.js** adapter for Express and standard HTTP servers (`@onceflow/core`).
 - **Python** adapter with async support for FastAPI and Starlette.
 - **Go** module with strict typing and zero-allocation philosophy.
