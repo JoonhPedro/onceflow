@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onceflow"
+version = "0.1.0"
+description = "High-performance idempotency library for distributed systems"
+dependencies = [
+    "redis>=5.0.0",
+    "fastapi>=0.100.0",
+    "starlette>=0.27.0"
+]

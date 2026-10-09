@@ -1,0 +1,100 @@
+# =========================
+# Mac / Windows OS Files
+# =========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# =========================
+# IDEs and Editors
+# =========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+
+# =========================
+# Go
+# =========================
+/bin/
+/pkg/
+/vendor/
+*.exe
+*.test
+*.out
+cover.out
+c.out
+
+# =========================
+# Node.js / TypeScript
+# =========================
+node_modules/
+dist/
+build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+coverage/
+.nyc_output/
+.npm/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing and Type Checking
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.pyre/
+.typeguard/
