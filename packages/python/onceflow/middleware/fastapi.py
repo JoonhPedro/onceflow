@@ -1,6 +1,7 @@
 import json
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.concurrency import run_in_threadpool
 from ..core import Engine, Result, ConflictError
 
 class OnceFlowMiddleware(BaseHTTPMiddleware):
@@ -18,7 +19,7 @@ class OnceFlowMiddleware(BaseHTTPMiddleware):
         full_key = f"onceflow:{self.namespace}:{idempotency_key}"
         
         try:
-            cached = self.engine.acquire(full_key)
+            token, cached = await run_in_threadpool(self.engine.acquire, full_key)
             if cached:
                 headers = {}
                 if cached.headers:
@@ -35,11 +36,11 @@ class OnceFlowMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         
         if response.status_code >= 500:
-            self.engine.fail(full_key)
+            await run_in_threadpool(self.engine.fail, full_key, token)
         else:
-            body = b""
+            body = bytearray()
             async for chunk in response.body_iterator:
-                body += chunk
+                body.extend(chunk)
                 
             headers_dict = dict(response.headers)
             headers_json = json.dumps(headers_dict)
@@ -48,11 +49,11 @@ class OnceFlowMiddleware(BaseHTTPMiddleware):
                 status="COMPLETED",
                 status_code=response.status_code,
                 headers=headers_json,
-                body=body.decode('utf-8'),
+                body=body.decode('utf-8', errors='replace'),
                 created_at=0
             )
-            self.engine.resolve(full_key, res)
+            await run_in_threadpool(self.engine.resolve, full_key, token, res)
             
-            return Response(content=body, status_code=response.status_code, headers=headers_dict)
+            return Response(content=bytes(body), status_code=response.status_code, headers=headers_dict)
         
         return response

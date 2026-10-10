@@ -18,8 +18,10 @@ export function onceflowMiddleware(engine: Engine, options: OnceFlowOptions = {}
 
         const fullKey = `onceflow:${namespace}:${idempotencyKey}`;
 
+        let token: string | null = null;
         try {
-            const cachedRes = await engine.acquire(fullKey);
+            const [acqToken, cachedRes] = await engine.acquire(fullKey);
+            token = acqToken;
             if (cachedRes) {
                 if (cachedRes.headers) {
                     try {
@@ -41,15 +43,15 @@ export function onceflowMiddleware(engine: Engine, options: OnceFlowOptions = {}
         const originalSend = res.send.bind(res);
         let responseCaptured = false;
 
-        res.send = (body: any) => {
-            if (!responseCaptured) {
+        res.send = (body?: any) => {
+            if (!responseCaptured && token) {
                 responseCaptured = true;
                 const statusCode = res.statusCode;
                 
                 if (statusCode >= 500) {
-                    engine.fail(fullKey).catch(console.error);
+                    engine.fail(fullKey, token).catch(console.error);
                 } else {
-                    engine.resolve(fullKey, {
+                    engine.resolve(fullKey, token, {
                         status: 'COMPLETED',
                         statusCode,
                         headers: JSON.stringify(res.getHeaders()),
@@ -60,6 +62,30 @@ export function onceflowMiddleware(engine: Engine, options: OnceFlowOptions = {}
             }
             return originalSend(body);
         };
+
+        res.on('finish', () => {
+            if (!responseCaptured && token) {
+                responseCaptured = true;
+                if (res.statusCode >= 500) {
+                    engine.fail(fullKey, token).catch(console.error);
+                } else {
+                    engine.resolve(fullKey, token, {
+                        status: 'COMPLETED',
+                        statusCode: res.statusCode,
+                        headers: JSON.stringify(res.getHeaders()),
+                        body: '',
+                        createdAt: Date.now()
+                    }).catch(console.error);
+                }
+            }
+        });
+
+        res.on('close', () => {
+            if (!responseCaptured && token) {
+                responseCaptured = true;
+                engine.fail(fullKey, token).catch(console.error);
+            }
+        });
 
         next();
     };

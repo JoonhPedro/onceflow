@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, Tuple
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 
@@ -16,15 +16,15 @@ class Result:
 
 class Storage(ABC):
     @abstractmethod
-    def acquire(self, key: str, lock_ttl: int) -> Optional[Result]:
+    def acquire(self, key: str, lock_ttl: int) -> Tuple[Optional[str], Optional[Result]]:
         pass
 
     @abstractmethod
-    def resolve(self, key: str, res: Result, retention_ttl: int) -> None:
+    def resolve(self, key: str, token: str, res: Result, retention_ttl: int) -> None:
         pass
 
     @abstractmethod
-    def fail(self, key: str) -> None:
+    def fail(self, key: str, token: str) -> None:
         pass
 
 class Engine:
@@ -33,11 +33,11 @@ class Engine:
         self.lock_ttl = lock_ttl_ms
         self.retention_ttl = retention_ttl_ms
 
-    def acquire(self, key: str) -> Optional[Result]:
+    def acquire(self, key: str) -> Tuple[Optional[str], Optional[Result]]:
         return self.storage.acquire(key, self.lock_ttl)
 
-    def resolve(self, key: str, res: Result) -> None:
-        self.storage.resolve(key, res, self.retention_ttl)
+    def resolve(self, key: str, token: str, res: Result) -> None:
+        self.storage.resolve(key, token, res, self.retention_ttl)
 
-    def fail(self, key: str) -> None:
-        self.storage.fail(key)
+    def fail(self, key: str, token: str) -> None:
+        self.storage.fail(key, token)

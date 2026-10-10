@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/seu-usuario/onceflow"
+	"github.com/JoonhPedro/onceflow"
 )
 
 type memoryEntry struct {

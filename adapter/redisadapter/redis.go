@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/seu-usuario/onceflow"
+	"github.com/JoonhPedro/onceflow"
 )
 
 var (

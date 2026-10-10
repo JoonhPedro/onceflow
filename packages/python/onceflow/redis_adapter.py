@@ -1,5 +1,6 @@
 import time
-from typing import Optional
+import uuid
+from typing import Optional, Tuple
 from redis import Redis
 from .core import Storage, Result, ConflictError
 
@@ -7,11 +8,12 @@ ACQUIRE_SCRIPT = """
 local key = KEYS[1]
 local ttl = ARGV[1]
 local now = ARGV[2]
+local token = ARGV[3]
 
 local status = redis.call('HGET', key, 'status')
 
 if not status or status == 'FAILED' then
-    redis.call('HSET', key, 'status', 'IN_PROGRESS', 'created_at', now)
+    redis.call('HSET', key, 'status', 'IN_PROGRESS', 'created_at', now, 'token', token)
     redis.call('PEXPIRE', key, ttl)
     return {1}
 end
@@ -37,11 +39,28 @@ local ttl = ARGV[1]
 local statusCode = ARGV[2]
 local headers = ARGV[3]
 local body = ARGV[4]
+local token = ARGV[5]
 
 local status = redis.call('HGET', key, 'status')
-if status == 'IN_PROGRESS' then
+local currentToken = redis.call('HGET', key, 'token')
+
+if status == 'IN_PROGRESS' and currentToken == token then
     redis.call('HMSET', key, 'status', 'COMPLETED', 'status_code', statusCode, 'headers', headers, 'body', body)
     redis.call('PEXPIRE', key, ttl)
+    return 1
+end
+return 0
+"""
+
+FAIL_SCRIPT = """
+local key = KEYS[1]
+local token = ARGV[1]
+
+local status = redis.call('HGET', key, 'status')
+local currentToken = redis.call('HGET', key, 'token')
+
+if status == 'IN_PROGRESS' and currentToken == token then
+    redis.call('DEL', key)
     return 1
 end
 return 0
@@ -52,18 +71,20 @@ class RedisAdapter(Storage):
         self.client = client
         self._acquire = client.register_script(ACQUIRE_SCRIPT)
         self._resolve = client.register_script(RESOLVE_SCRIPT)
+        self._fail = client.register_script(FAIL_SCRIPT)
 
-    def acquire(self, key: str, lock_ttl: int) -> Optional[Result]:
+    def acquire(self, key: str, lock_ttl: int) -> Tuple[Optional[str], Optional[Result]]:
         now = int(time.time() * 1000)
-        res = self._acquire(keys=[key], args=[lock_ttl, now])
+        token = str(uuid.uuid4())
+        res = self._acquire(keys=[key], args=[lock_ttl, now, token])
         
         state = res[0]
         if state == 1:
-            return None
+            return token, None
         if state == 0:
             raise ConflictError("conflict: operation in progress")
         if state == 2:
-            return Result(
+            return None, Result(
                 status="COMPLETED",
                 status_code=int(res[1]),
                 headers=res[2].decode('utf-8') if isinstance(res[2], bytes) else res[2],
@@ -72,13 +93,14 @@ class RedisAdapter(Storage):
             )
         raise Exception("Redis adapter error")
 
-    def resolve(self, key: str, res: Result, retention_ttl: int) -> None:
+    def resolve(self, key: str, token: str, res: Result, retention_ttl: int) -> None:
         self._resolve(keys=[key], args=[
             retention_ttl,
             res.status_code,
             res.headers,
-            res.body
+            res.body,
+            token
         ])
 
-    def fail(self, key: str) -> None:
-        self.client.delete(key)
+    def fail(self, key: str, token: str) -> None:
+        self._fail(keys=[key], args=[token])

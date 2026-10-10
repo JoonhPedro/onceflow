@@ -1,4 +1,4 @@
-module github.com/seu-usuario/onceflow
+module github.com/JoonhPedro/onceflow
 
 go 1.21
 

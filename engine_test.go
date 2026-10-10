@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/seu-usuario/onceflow"
-	"github.com/seu-usuario/onceflow/middleware"
-	"github.com/seu-usuario/onceflow/mock"
+	"github.com/JoonhPedro/onceflow"
+	"github.com/JoonhPedro/onceflow/middleware"
+	"github.com/JoonhPedro/onceflow/mock"
 )
 
 func TestConcurrencyIdempotency(t *testing.T) {

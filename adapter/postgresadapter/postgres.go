@@ -8,7 +8,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/seu-usuario/onceflow"
+	"github.com/JoonhPedro/onceflow"
 )
 
 // SQL schema needed in your database:

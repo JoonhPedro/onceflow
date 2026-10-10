@@ -14,7 +14,7 @@ Siga as etapas abaixo para instalar e começar a usar o `onceflow` no seu projet
 No diretório do seu projeto Go, instale o pacote principal do `onceflow` executando o comando abaixo:
 
 ```bash
-go get github.com/seu-usuario/onceflow
+go get github.com/JoonhPedro/onceflow
 ```
 
 *(Observação: Se o repositório estiver em outro domínio/usuário, substitua a URL correspondente)*.
@@ -38,8 +38,8 @@ import (
 	"time"
 	
 	"github.com/redis/go-redis/v9"
-	"github.com/seu-usuario/onceflow"
-	"github.com/seu-usuario/onceflow/adapter/redisadapter"
+	"github.com/JoonhPedro/onceflow"
+	"github.com/JoonhPedro/onceflow/adapter/redisadapter"
 )
 
 func main() {
@@ -62,7 +62,7 @@ func main() {
 	chaveOperacao := "pedido_123"
 
 	// 4. Tentar adquirir a exclusividade da operação
-	resultado, err := engine.Acquire(ctx, chaveOperacao)
+	token, resultado, err := engine.Acquire(ctx, chaveOperacao)
 	if err != nil {
 		if err == onceflow.ErrConflict {
 			fmt.Println("Erro: A operação já está em andamento!")
@@ -82,7 +82,7 @@ func main() {
 	fmt.Println("Processando a operação pela primeira vez...")
 
 	// 6. Após o processamento, resolver (salvar) o estado no OnceFlow
-	err = engine.Resolve(ctx, chaveOperacao, onceflow.Result{
+	err = engine.Resolve(ctx, chaveOperacao, token, onceflow.Result{
 		Status:     onceflow.StatusCompleted,
 		StatusCode: 200,
 		Body:       `{"mensagem": "sucesso"}`,
@@ -119,7 +119,7 @@ Na sua aplicação, inicialize utilizando o `postgresadapter`:
 import (
 	"database/sql"
 	_ "github.com/lib/pq"
-	"github.com/seu-usuario/onceflow/adapter/postgresadapter"
+	"github.com/JoonhPedro/onceflow/adapter/postgresadapter"
 )
 
 // ...
